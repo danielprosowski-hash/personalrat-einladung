@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PR-Einladung</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="app-header">
+  <div class="app-header-text">
+    <h1>PR-Einladung</h1>
+    <p>Einladung, Tagesordnung und Anwesenheitsliste für Personalratssitzungen</p>
+  </div>
+  <div class="app-header-note">Lokal im Browser · keine Cloud · keine Anmeldung</div>
+</header>
+
+<div class="app">
+
+  <!-- ============ Seitenleiste ============ -->
+  <aside class="sidebar" aria-label="Sitzungen, Mitglieder und Einstellungen">
+
+    <section class="block">
+      <div class="block-head">
+        <h2>Sitzungen</h2>
+        <button id="btn-new-session" class="mini" type="button">+ Neu</button>
+      </div>
+      <ul id="session-list" class="session-list"></ul>
+    </section>
+
+    <section class="block">
+      <details id="det-members">
+        <summary>Mitglieder <span id="member-count" class="badge">0</span></summary>
+        <div class="block-body">
+          <p class="hint">Diese Angaben werden nur in diesem Browser gespeichert und stehen in keiner Programmdatei.</p>
+          <div class="table-scroll">
+            <table class="member-table">
+              <thead>
+                <tr><th>Name</th><th>Funktion</th><th>E-Mail</th><th>Liste</th><th></th></tr>
+              </thead>
+              <tbody id="member-tbody"></tbody>
+            </table>
+          </div>
+          <button id="btn-add-member" class="secondary mini" type="button">+ Person hinzufügen</button>
+          <datalist id="listen-vorschlaege"></datalist>
+        </div>
+      </details>
+    </section>
+
+    <section class="block">
+      <details id="det-vorlagen">
+        <summary>Vorlagen</summary>
+        <div class="block-body">
+          <p class="hint">Sichert Mitglieder, Verteiler, Standardtexte und Standard-Tagesordnungspunkte unter einem Namen.</p>
+          <div class="row">
+            <input id="vorlage-name" type="text" placeholder="Name der Vorlage">
+            <button id="btn-save-vorlage" type="button">Als Vorlage speichern</button>
+          </div>
+          <ul id="vorlage-list" class="vorlage-list"></ul>
+        </div>
+      </details>
+    </section>
+
+    <section class="block">
+      <details id="det-settings">
+        <summary>Einstellungen &amp; Standardtexte</summary>
+        <div class="block-body">
+
+          <h3>Briefkopf</h3>
+          <label><span>Dienststelle</span>
+            <input id="set-organisation" type="text" placeholder="z. B. Stadt Musterstadt"></label>
+          <label><span>Gremium</span>
+            <input id="set-gremium" type="text" placeholder="-Der Personalrat-"></label>
+          <label><span>Ort in der Datumszeile</span>
+            <input id="set-ort" type="text" placeholder="z. B. Musterstadt"></label>
+
+          <h3>Verteiler</h3>
+          <label><span>Empfängergruppen (eine je Zeile)</span>
+            <textarea id="set-verteiler" rows="4"></textarea></label>
+
+          <h3>Unterschrift</h3>
+          <label><span>Name</span>
+            <input id="set-vorsitz-name" type="text" placeholder="Nachname"></label>
+          <label><span>Funktionsbezeichnung</span>
+            <input id="set-vorsitz-funktion" type="text" placeholder="Personalratsvorsitzende"></label>
+
+          <h3>Texte</h3>
+          <label><span>Einladungssatz</span>
+            <textarea id="set-einladungstext" rows="3"></textarea>
+            <small>Platzhalter: {nummer} {wochentag} {datum} {uhrzeit} {raum}</small></label>
+          <label><span>Hinweis bei Verhinderung (kursiv)</span>
+            <textarea id="set-hinweistext" rows="4"></textarea></label>
+          <label class="check"><input id="set-vertraulichkeit-an" type="checkbox">
+            <span>Vertraulichkeitshinweis unter der Tagesordnung ausgeben</span></label>
+          <label><span>Vertraulichkeitshinweis</span>
+            <textarea id="set-vertraulichkeit" rows="3"></textarea></label>
+
+          <h3>Tagesordnung</h3>
+          <label><span>Feste Punkte am Anfang (eine Zeile je Punkt)</span>
+            <textarea id="set-standard-tops" rows="5"></textarea>
+            <small>Platzhalter {protokolldatum} wird durch das Datum der Vorsitzung ersetzt.</small></label>
+          <label><span>Feste Punkte am Ende</span>
+            <textarea id="set-schluss-tops" rows="3"></textarea></label>
+          <label><span>Textbausteine für wiederkehrende Punkte</span>
+            <textarea id="set-bausteine" rows="6"></textarea></label>
+
+          <h3>Sonstiges</h3>
+          <label><span>Ladungsfrist in Tagen</span>
+            <input id="set-frist" type="number" min="0" max="60"></label>
+          <label><span>Dauer der Sitzung in Minuten (für die Termindatei)</span>
+            <input id="set-dauer" type="number" min="15" step="15"></label>
+          <label><span>Namensschema für Dateien</span>
+            <input id="set-dateiname" type="text">
+            <small>Platzhalter: {datum} {dokument} {nummer}</small></label>
+
+        </div>
+      </details>
+    </section>
+
+    <section class="block">
+      <div class="row">
+        <button id="btn-export" class="secondary mini" type="button">Daten sichern</button>
+        <label class="filebtn mini">Daten laden
+          <input id="input-import" type="file" accept="application/json,.json" hidden>
+        </label>
+      </div>
+      <p class="hint">Alles liegt nur in diesem Browser. Für einen anderen Rechner die Daten sichern und dort wieder laden.</p>
+    </section>
+
+  </aside>
+
+  <!-- ============ Hauptbereich ============ -->
+  <main class="main">
+
+    <section class="card">
+      <h2>Sitzungsdaten</h2>
+      <div class="grid">
+        <label><span>Sitzungsnummer</span><input id="s-nummer" type="number" min="1"></label>
+        <label><span>Datum</span><input id="s-datum" type="date"></label>
+        <label><span>Uhrzeit</span><input id="s-uhrzeit" type="time"></label>
+        <label><span>Raum</span><input id="s-raum" type="text" placeholder="z. B. Raum 206"></label>
+        <label><span>Protokollkontrolle vom</span><input id="s-letzte" type="date"></label>
+        <label><span>Leerzeilen für Gäste auf der Anwesenheitsliste</span>
+          <input id="s-gaeste" type="number" min="0" max="20"></label>
+      </div>
+      <p id="frist-hinweis" class="notice" hidden></p>
+    </section>
+
+    <section class="card">
+      <div class="block-head">
+        <h2>Tagesordnung</h2>
+        <div class="row">
+          <select id="baustein-select" aria-label="Textbaustein wählen"></select>
+          <button id="btn-add-baustein" class="secondary mini" type="button">Baustein einfügen</button>
+          <button id="btn-add-top" class="mini" type="button">+ Punkt</button>
+        </div>
+      </div>
+      <p class="hint">Die festen Punkte am Anfang und Ende stehen in den Einstellungen und werden automatisch ergänzt.</p>
+      <ol id="top-list" class="top-list"></ol>
+    </section>
+
+    <section class="card">
+      <h2>Teilnehmende</h2>
+      <p class="hint">Angehakt wird eingeladen. Eine Absage schlägt automatisch das Ersatzmitglied derselben Liste vor.</p>
+      <div id="attendee-list" class="attendee-list"></div>
+      <div id="absage-hinweis" class="notice" hidden></div>
+    </section>
+
+    <section class="card">
+      <h2>Ausgabe</h2>
+      <div class="actions">
+        <div class="action-group">
+          <h3>Einladung</h3>
+          <button id="btn-docx-einladung" type="button">Word-Datei</button>
+          <button id="btn-print-einladung" class="secondary" type="button">Drucken / PDF</button>
+        </div>
+        <div class="action-group">
+          <h3>Anwesenheitsliste</h3>
+          <button id="btn-docx-anwesenheit" type="button">Word-Datei</button>
+          <button id="btn-print-anwesenheit" class="secondary" type="button">Drucken / PDF</button>
+        </div>
+        <div class="action-group">
+          <h3>E-Mail</h3>
+          <button id="btn-mail" type="button">In Mailprogramm öffnen</button>
+          <button id="btn-copy-mail" class="secondary" type="button">Text kopieren</button>
+        </div>
+        <div class="action-group">
+          <h3>Termin</h3>
+          <button id="btn-ics" class="secondary" type="button">Termindatei (.ics)</button>
+        </div>
+      </div>
+      <p id="status" class="status" role="status" aria-live="polite"></p>
+    </section>
+
+    <section class="card danger-zone">
+      <button id="btn-delete-session" class="danger secondary mini" type="button">Diese Sitzung löschen</button>
+    </section>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

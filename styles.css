@@ -1,0 +1,252 @@
+/* PR-Einladung — Layout und Gestaltung
+   Ohne externe Schriften oder Bibliotheken, damit die App offline läuft. */
+
+:root {
+  --bg: #f4f5f7;
+  --panel: #ffffff;
+  --ink: #1c2430;
+  --muted: #5d6b7c;
+  --line: #d8dee6;
+  --accent: #1f4e79;
+  --accent-ink: #ffffff;
+  --warn-bg: #fdf3e0;
+  --warn-line: #e0b877;
+  --warn-ink: #6b4a12;
+  --danger: #a32d2d;
+  --radius: 8px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171b21;
+    --panel: #212730;
+    --ink: #e7ebf0;
+    --muted: #9aa7b6;
+    --line: #39414c;
+    --accent: #5a9bd5;
+    --accent-ink: #10151b;
+    --warn-bg: #3a2f1c;
+    --warn-line: #7a6132;
+    --warn-ink: #f0d9a8;
+    --danger: #e07a7a;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--ink);
+}
+
+/* ---------- Kopfzeile ---------- */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 20px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  flex-wrap: wrap;
+}
+.app-header h1 { margin: 0; font-size: 20px; }
+.app-header p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
+.app-header-note {
+  margin-left: auto;
+  font-size: 12px;
+  opacity: .85;
+  border: 1px solid currentColor;
+  border-radius: 999px;
+  padding: 3px 10px;
+}
+
+/* ---------- Grundgerüst ---------- */
+.app {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px;
+  align-items: start;
+}
+@media (max-width: 900px) {
+  .app { grid-template-columns: 1fr; }
+}
+
+.sidebar { display: flex; flex-direction: column; gap: 12px; }
+.main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.block, .card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.card { padding: 18px; }
+
+h2 { margin: 0 0 10px; font-size: 16px; }
+h3 { margin: 16px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+.block-head {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; margin-bottom: 8px; flex-wrap: wrap;
+}
+.block-head h2 { margin: 0; }
+
+summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 15px;
+  list-style: none;
+  display: flex; align-items: center; gap: 8px;
+}
+summary::-webkit-details-marker { display: none; }
+summary::before { content: "▸"; color: var(--muted); transition: transform .15s; }
+details[open] > summary::before { transform: rotate(90deg); }
+.block-body { padding-top: 12px; }
+
+.badge {
+  background: var(--line); color: var(--muted);
+  border-radius: 999px; padding: 1px 8px; font-size: 12px; font-weight: 500;
+}
+
+.hint { margin: 6px 0 10px; font-size: 12.5px; color: var(--muted); }
+small { display: block; margin-top: 3px; font-size: 12px; color: var(--muted); }
+
+/* ---------- Formularelemente ---------- */
+label { display: block; margin-bottom: 12px; }
+label > span { display: block; margin-bottom: 4px; font-size: 13px; font-weight: 500; }
+label.check { display: flex; align-items: flex-start; gap: 8px; }
+label.check > span { margin: 0; font-weight: 400; }
+
+input[type="text"], input[type="number"], input[type="date"], input[type="time"],
+input[type="email"], textarea, select {
+  width: 100%;
+  font: inherit;
+  padding: 7px 9px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+textarea { resize: vertical; }
+input:focus, textarea:focus, select:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0 14px;
+}
+.row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.row > input, .row > select { flex: 1 1 140px; width: auto; }
+
+/* ---------- Schaltflächen ---------- */
+button, .filebtn {
+  font: inherit;
+  font-weight: 500;
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  cursor: pointer;
+}
+button:hover, .filebtn:hover { filter: brightness(1.08); }
+button.secondary, .filebtn {
+  background: transparent;
+  color: var(--accent);
+}
+button.mini, .filebtn.mini { padding: 5px 10px; font-size: 13px; }
+button.danger { border-color: var(--danger); color: var(--danger); }
+button.icon {
+  padding: 3px 8px; background: transparent;
+  border-color: transparent; color: var(--muted); font-size: 15px;
+}
+button.icon:hover { color: var(--ink); background: var(--bg); }
+.filebtn { display: inline-block; }
+
+/* ---------- Sitzungsliste ---------- */
+.session-list, .vorlage-list { list-style: none; margin: 0; padding: 0; }
+.session-list li, .vorlage-list li {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 9px; border-radius: 6px; cursor: pointer;
+}
+.session-list li:hover, .vorlage-list li:hover { background: var(--bg); }
+.session-list li.active { background: var(--accent); color: var(--accent-ink); }
+.session-list li.active .sub { color: inherit; opacity: .8; }
+.session-list .title, .vorlage-list .title { flex: 1; min-width: 0; }
+.session-list .sub, .vorlage-list .sub { display: block; font-size: 12px; color: var(--muted); }
+
+/* ---------- Mitgliedertabelle ---------- */
+.table-scroll { overflow-x: auto; }
+.member-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.member-table th {
+  text-align: left; font-size: 11.5px; text-transform: uppercase;
+  color: var(--muted); padding: 4px 4px; border-bottom: 1px solid var(--line);
+}
+.member-table td { padding: 3px 2px; vertical-align: middle; }
+.member-table input, .member-table select { padding: 5px 6px; font-size: 13px; min-width: 90px; }
+
+/* ---------- Tagesordnung ---------- */
+.top-list { list-style: none; margin: 0; padding: 0; counter-reset: top; }
+.top-row {
+  display: flex; gap: 8px; align-items: flex-start;
+  padding: 8px; border: 1px solid var(--line);
+  border-radius: 6px; margin-bottom: 8px; background: var(--bg);
+}
+.top-row .num {
+  font-weight: 600; color: var(--muted);
+  min-width: 26px; padding-top: 8px; text-align: right;
+}
+.top-row .fields { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.top-row .fields input, .top-row .fields textarea { margin: 0; }
+.top-row .tools { display: flex; flex-direction: column; gap: 2px; }
+.top-row .fixed { font-style: italic; color: var(--muted); padding: 7px 0; }
+
+/* ---------- Teilnehmende ---------- */
+.attendee-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 4px 16px;
+}
+.attendee {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 6px; border-radius: 6px;
+}
+.attendee:hover { background: var(--bg); }
+.attendee .name { flex: 1; min-width: 0; }
+.attendee .role { font-size: 12px; color: var(--muted); }
+.attendee.absent .name { text-decoration: line-through; opacity: .6; }
+.attendee input[type="checkbox"] { flex: none; }
+.attendee .absage { font-size: 12px; color: var(--muted); cursor: pointer; }
+
+/* ---------- Ausgabe ---------- */
+.actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+}
+.action-group { display: flex; flex-direction: column; gap: 8px; align-items: stretch; }
+.action-group h3 { margin: 0 0 2px; }
+
+.notice {
+  margin: 10px 0 0; padding: 9px 12px;
+  background: var(--warn-bg); border: 1px solid var(--warn-line);
+  color: var(--warn-ink); border-radius: 6px; font-size: 13.5px;
+}
+.ersatz-zeile {
+  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  padding: 3px 0;
+}
+.ersatz-zeile + .ersatz-zeile { border-top: 1px solid var(--warn-line); margin-top: 4px; padding-top: 7px; }
+.ersatz-zeile button { background: var(--panel); }
+.status { margin: 12px 0 0; font-size: 13.5px; color: var(--muted); min-height: 1.2em; }
+
+.danger-zone { padding: 12px 18px; }
+
+@media print {
+  .app-header, .sidebar, .actions, .danger-zone { display: none; }
+}

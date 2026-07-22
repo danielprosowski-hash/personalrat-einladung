@@ -1,0 +1,11 @@
+# Echte Dokumente mit Personen- und Vorgangsdaten gehören nicht auf GitHub.
+Einladung.pdf
+*.docx
+!Vorlagen/*.docx
+PR-Einladung_Sicherung_*.json
+
+# Betriebssystem-Dateien
+.DS_Store
+
+# Lokale Claude-Code-Einstellungen
+.claude/
