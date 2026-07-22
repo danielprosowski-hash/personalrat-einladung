@@ -51,6 +51,12 @@ body {
   color: var(--accent-ink);
   flex-wrap: wrap;
 }
+.app-logo {
+  width: 44px; height: 44px;
+  border-radius: 10px;
+  flex: none;
+  background: #fff;
+}
 .app-header h1 { margin: 0; font-size: 20px; }
 .app-header p { margin: 2px 0 0; font-size: 13px; opacity: .85; }
 .app-header-note {
