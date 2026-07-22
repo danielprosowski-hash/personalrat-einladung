@@ -5,8 +5,17 @@ Tagesordnung, die passenden E-Mails und die Anwesenheitsliste.
 
 ## Starten
 
-Datei `Personalrat Einladung.html` doppelklicken. Sie öffnet sich im
-Standardbrowser. Es wird nichts installiert, kein Internetzugang benötigt.
+Zwei Wege, dieselbe App:
+
+- **Online**: [danielprosowski-hash.github.io/personalrat-einladung](https://danielprosowski-hash.github.io/personalrat-einladung/)
+  im Browser öffnen. Kein Installieren nötig.
+- **Lokal**: Datei `index.html` doppelklicken. Öffnet sich im
+  Standardbrowser, funktioniert auch ganz ohne Internetzugang.
+
+Beide Varianten speichern die Daten nur im jeweiligen Browser (siehe unten).
+Wer online und lokal nutzt, muss die Daten einmal über „Daten sichern“ /
+„Daten laden“ zwischen beiden übertragen – es sind zwei getrennte
+Speicherorte.
 
 ## Wichtig: Wo liegen die Daten?
 
@@ -65,7 +74,7 @@ Wahlperiode).
 
 | Datei | Zweck |
 | --- | --- |
-| `Personalrat Einladung.html` | Startet die App |
+| `index.html` | Startet die App |
 | `app.js`, `styles.css` | Programmcode und Gestaltung |
 | `Einladung.pdf` | Eigene, echte Vorlage – bleibt lokal, wird nicht mit hochgeladen |
 
