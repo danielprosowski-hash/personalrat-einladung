@@ -909,7 +909,8 @@
       "attendee-list", "absage-hinweis",
       "btn-docx-einladung", "btn-print-einladung", "btn-docx-anwesenheit",
       "btn-print-anwesenheit", "btn-mail", "btn-copy-mail", "btn-ics",
-      "btn-delete-session", "status"
+      "btn-delete-session", "status",
+      "erste-schritte", "schritt-1", "schritt-2", "schritt-3"
     ].forEach(function (id) {
       el[id] = $(id);
     });
@@ -929,6 +930,34 @@
     zeigeMitglieder();
     zeigeVorlagen();
     zeigeSitzung();
+    zeigeErsteSchritte();
+  }
+
+  /* Kurzer Einstiegsfahrplan fuer den ersten Besuch. Verschwindet, sobald
+     Mitglieder, Briefkopf und ein Sitzungstermin vorhanden sind. Beim
+     allerersten, vollstaendig leeren Start werden die zugehoerigen
+     Abschnitte automatisch aufgeklappt. */
+  var ersteSchritteInitialGeprueft = false;
+
+  function zeigeErsteSchritte() {
+    var schritt1Erledigt = store.members.length > 0;
+    var schritt2Erledigt = !!(store.settings.organisation || "").trim() &&
+                           !!(store.settings.gremium || "").trim();
+    var schritt3Erledigt = !!currentSession().datum;
+
+    if (!ersteSchritteInitialGeprueft) {
+      ersteSchritteInitialGeprueft = true;
+      if (!schritt1Erledigt) document.getElementById("det-members").open = true;
+      if (!schritt2Erledigt) document.getElementById("det-settings").open = true;
+    }
+
+    var alleErledigt = schritt1Erledigt && schritt2Erledigt && schritt3Erledigt;
+    el["erste-schritte"].hidden = alleErledigt;
+    if (alleErledigt) return;
+
+    el["schritt-1"].classList.toggle("done", schritt1Erledigt);
+    el["schritt-2"].classList.toggle("done", schritt2Erledigt);
+    el["schritt-3"].classList.toggle("done", schritt3Erledigt);
   }
 
   function zeigeSitzungsliste() {
@@ -1045,7 +1074,7 @@
       bWeg.addEventListener("click", function () {
         if (!confirm("„" + (m.name || "diese Person") + "“ aus der Mitgliederliste entfernen?")) return;
         store.members = store.members.filter(function (x) { return x.id !== m.id; });
-        persist(); zeigeMitglieder(); zeigeTeilnehmende();
+        persist(); zeigeMitglieder(); zeigeTeilnehmende(); zeigeErsteSchritte();
       });
       tdWeg.appendChild(bWeg);
 
@@ -1364,7 +1393,7 @@
         s[schluessel] = wandler ? wandler(el[id].value) : el[id].value;
         touchSession();
         if (id === "s-nummer" || id === "s-datum") zeigeSitzungsliste();
-        if (id === "s-datum") zeigeFrist();
+        if (id === "s-datum") { zeigeFrist(); zeigeErsteSchritte(); }
         if (id === "s-letzte") zeigeTops();
       });
     }
@@ -1391,8 +1420,8 @@
         if (nachher) nachher();
       });
     }
-    text("set-organisation", "organisation");
-    text("set-gremium", "gremium");
+    text("set-organisation", "organisation", zeigeErsteSchritte);
+    text("set-gremium", "gremium", zeigeErsteSchritte);
     text("set-ort", "ort");
     liste("set-verteiler", "verteiler");
     text("set-vorsitz-name", "vorsitzName");
@@ -1439,6 +1468,25 @@
     setStatus("Neue Sitzung angelegt. Die Protokollkontrolle wurde auf den Termin der Vorsitzung gesetzt.");
   }
 
+  function bindeErsteSchritte() {
+    ["schritt-1", "schritt-2", "schritt-3"].forEach(function (id) {
+      el[id].addEventListener("click", function () {
+        if (el[id].classList.contains("done")) return;
+        var ziel = el[id].getAttribute("data-target");
+        if (ziel) {
+          var details = document.getElementById(ziel);
+          details.open = true;
+          details.scrollIntoView({ behavior: "smooth", block: "start" });
+          var erstesFeld = details.querySelector("input, textarea, select");
+          if (erstesFeld) erstesFeld.focus({ preventScroll: true });
+        } else {
+          el["s-datum"].scrollIntoView({ behavior: "smooth", block: "center" });
+          el["s-datum"].focus({ preventScroll: true });
+        }
+      });
+    });
+  }
+
   function bindeAktionen() {
     el["btn-new-session"].addEventListener("click", neueSitzung);
 
@@ -1458,6 +1506,7 @@
       persist();
       zeigeMitglieder();
       zeigeTeilnehmende();
+      zeigeErsteSchritte();
       var eingaben = el["member-tbody"].querySelectorAll('input[type="text"]');
       if (eingaben.length) eingaben[eingaben.length - 1].focus();
     });
@@ -1613,6 +1662,7 @@
   bindeSitzungsfelder();
   bindeEinstellungen();
   bindeAktionen();
+  bindeErsteSchritte();
   alleAnzeigen();
 
   window.addEventListener("beforeunload", persist);
