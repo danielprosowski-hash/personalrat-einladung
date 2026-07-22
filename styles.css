@@ -277,6 +277,12 @@ button.icon:hover { color: var(--ink); background: var(--bg); }
   background: var(--warn-bg); border: 1px solid var(--warn-line);
   color: var(--warn-ink); border-radius: 6px; font-size: 13.5px;
 }
+.drucken-hinweis {
+  margin-top: 14px; padding: 9px 12px;
+  background: var(--warn-bg); border: 1px solid var(--warn-line);
+  color: var(--warn-ink); border-radius: 6px; font-size: 12.5px;
+}
+.drucken-hinweis strong { color: inherit; }
 .ersatz-zeile {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   padding: 3px 0;

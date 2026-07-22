@@ -70,6 +70,20 @@ Angaben; eine Vorlage lässt sich zusätzlich jederzeit erneut laden, falls
 mehrere Zusammensetzungen nebeneinander gebraucht werden (z. B. nach einer
 Wahlperiode).
 
+## Word-Datei statt Drucken/PDF für offizielle Dokumente
+
+Für die Einladung als Word-Datei sind keine Browser-Zusätze im Dokument –
+sie enthält nur das, was in der App eingetragen wurde. Genau deshalb ist sie
+der richtige Weg für alles, was unterschrieben, ausgehängt oder weitergegeben
+wird.
+
+Der Weg über „Drucken / PDF“ nutzt dagegen den Druckdialog des Browsers.
+Browser wie Safari oder Chrome fügen dort **standardmäßig eine eigene
+Kopf-/Fußzeile** mit Webadresse, Datum und Seitenzahl ein – das lässt sich
+nicht aus der App heraus abschalten. Vor dem Speichern als PDF oder dem
+Drucken im Druckdialog die Option **„Kopf- und Fußzeilen“** (bzw. „Headers
+and Footers“) abwählen, sonst erscheint die Webadresse auf dem Ausdruck.
+
 ## Ordnerinhalt
 
 | Datei | Zweck |
