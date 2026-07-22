@@ -834,57 +834,218 @@
   }
 
   /* =====================================================================
+     Verschluesselung (Web Crypto API: PBKDF2 + AES-GCM, ohne Bibliothek)
+     ===================================================================== */
+
+  var PBKDF2_ITERATIONEN = 200000;
+
+  function zuBase64(bytes) {
+    var bin = "";
+    for (var i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+    return btoa(bin);
+  }
+
+  function vonBase64(b64) {
+    var bin = atob(b64);
+    var bytes = new Uint8Array(bin.length);
+    for (var i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+    return bytes;
+  }
+
+  function schluesselAbleiten(passwort, salt, iterationen) {
+    var enc = new TextEncoder();
+    return crypto.subtle
+      .importKey("raw", enc.encode(passwort), "PBKDF2", false, ["deriveKey"])
+      .then(function (basisSchluessel) {
+        return crypto.subtle.deriveKey(
+          { name: "PBKDF2", salt: salt, iterations: iterationen, hash: "SHA-256" },
+          basisSchluessel,
+          { name: "AES-GCM", length: 256 },
+          false,
+          ["encrypt", "decrypt"]
+        );
+      });
+  }
+
+  function verschluesseln(klartext, passwort) {
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return schluesselAbleiten(passwort, salt, PBKDF2_ITERATIONEN).then(function (schluessel) {
+      var enc = new TextEncoder();
+      return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, schluessel, enc.encode(klartext))
+        .then(function (chiffre) {
+          return {
+            verschluesselt: true,
+            kdf: "PBKDF2-SHA256",
+            iterationen: PBKDF2_ITERATIONEN,
+            salt: zuBase64(salt),
+            iv: zuBase64(iv),
+            daten: zuBase64(new Uint8Array(chiffre))
+          };
+        });
+    });
+  }
+
+  /* Wirft bei falschem Passwort oder beschaedigter Datei (AES-GCM prueft
+     die Unversehrtheit selbst mit, daher kein zusaetzlicher Check noetig). */
+  function entschluesseln(paket, passwort) {
+    var salt = vonBase64(paket.salt);
+    var iv = vonBase64(paket.iv);
+    return schluesselAbleiten(passwort, salt, paket.iterationen || PBKDF2_ITERATIONEN)
+      .then(function (schluessel) {
+        var chiffre = vonBase64(paket.daten);
+        return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, schluessel, chiffre);
+      })
+      .then(function (klartextBuffer) {
+        return new TextDecoder().decode(klartextBuffer);
+      });
+  }
+
+  /* =====================================================================
+     Passwort-Dialog (einfaches Modal, kein Bibliotheks-Overlay noetig)
+     ===================================================================== */
+
+  /* Gibt ein Promise zurueck, das mit {passwort} (String oder null bei
+     "ohne Passwort"), oder mit null bei Abbruch aufgeloest wird. */
+  function passwortDialog(optionen) {
+    return new Promise(function (resolve) {
+      el["pw-modal-title"].textContent = optionen.titel;
+      el["pw-modal-hint"].textContent = optionen.hinweis || "";
+      el["pw-modal-input"].value = "";
+      el["pw-modal-confirm"].value = "";
+      el["pw-modal-error"].hidden = true;
+      el["pw-modal-confirm-wrap"].hidden = !optionen.bestaetigen;
+      el["pw-modal-skip"].hidden = !optionen.erlaubeUeberspringen;
+      el["pw-modal"].hidden = false;
+      el["pw-modal-input"].focus();
+
+      function fehler(text) {
+        el["pw-modal-error"].hidden = false;
+        el["pw-modal-error"].textContent = text;
+      }
+
+      function schliessen(ergebnis) {
+        el["pw-modal"].hidden = true;
+        el["pw-modal-ok"].removeEventListener("click", aufOk);
+        el["pw-modal-skip"].removeEventListener("click", aufSkip);
+        el["pw-modal-cancel"].removeEventListener("click", aufCancel);
+        el["pw-modal"].removeEventListener("keydown", aufTaste);
+        resolve(ergebnis);
+      }
+
+      function aufOk() {
+        var pw = el["pw-modal-input"].value;
+        if (!pw) { fehler("Bitte ein Passwort eingeben."); return; }
+        if (optionen.bestaetigen && pw !== el["pw-modal-confirm"].value) {
+          fehler("Die Passwörter stimmen nicht überein.");
+          return;
+        }
+        schliessen({ passwort: pw });
+      }
+      function aufSkip() { schliessen({ passwort: null }); }
+      function aufCancel() { schliessen(null); }
+      function aufTaste(e) {
+        if (e.key === "Enter") aufOk();
+        if (e.key === "Escape") aufCancel();
+      }
+
+      el["pw-modal-ok"].addEventListener("click", aufOk);
+      el["pw-modal-skip"].addEventListener("click", aufSkip);
+      el["pw-modal-cancel"].addEventListener("click", aufCancel);
+      el["pw-modal"].addEventListener("keydown", aufTaste);
+    });
+  }
+
+  /* =====================================================================
      Sicherung: alle Daten in eine Datei und zurueck
      ===================================================================== */
 
   function sicherungErstellen() {
-    var paket = {
-      programm: "PR-Einladung",
-      dateiversion: DATEI_VERSION,
-      gesichertAm: new Date().toISOString(),
-      daten: store
-    };
-    var heute = new Date();
-    var name = "PR-Einladung_Sicherung_" + heute.getFullYear() + "-" +
-      pad(heute.getMonth() + 1) + "-" + pad(heute.getDate()) + ".json";
-    herunterladen(
-      new Blob([JSON.stringify(paket, null, 2)], { type: "application/json" }),
-      name
-    );
-    setStatus("Sicherung erstellt: " + name + " — enthält " + store.members.length +
-      " Personen, " + store.vorlagen.length + " Vorlagen und " +
-      store.sessions.length + " Sitzungen.");
+    passwortDialog({
+      titel: "Sicherung erstellen",
+      hinweis: "Mit Passwort wird die Datei verschlüsselt (AES-256) und ist ohne " +
+        "das Passwort nicht lesbar. Ohne Passwort bleibt sie im Klartext lesbar.",
+      bestaetigen: true,
+      erlaubeUeberspringen: true
+    }).then(function (antwort) {
+      if (!antwort) return; // abgebrochen
+
+      var paket = {
+        programm: "PR-Einladung",
+        dateiversion: DATEI_VERSION,
+        gesichertAm: new Date().toISOString()
+      };
+
+      var weiter = antwort.passwort
+        ? verschluesseln(JSON.stringify(store), antwort.passwort).then(function (verschluesseltesPaket) {
+            Object.assign(paket, verschluesseltesPaket);
+          })
+        : Promise.resolve().then(function () { paket.daten = store; });
+
+      weiter.then(function () {
+        var heute = new Date();
+        var name = "PR-Einladung_Sicherung_" + heute.getFullYear() + "-" +
+          pad(heute.getMonth() + 1) + "-" + pad(heute.getDate()) +
+          (antwort.passwort ? "_verschluesselt" : "") + ".json";
+        herunterladen(
+          new Blob([JSON.stringify(paket, null, 2)], { type: "application/json" }),
+          name
+        );
+        setStatus("Sicherung erstellt: " + name + " — enthält " + store.members.length +
+          " Personen, " + store.vorlagen.length + " Vorlagen und " +
+          store.sessions.length + " Sitzungen." +
+          (antwort.passwort ? " Verschlüsselt mit Passwort." : ""));
+      });
+    });
   }
 
   function sicherungEinlesen(datei) {
-    var leser = new FileReader();
-    leser.onload = function () {
+    datei.text().then(function (text) {
       var paket;
       try {
-        paket = JSON.parse(String(leser.result));
+        paket = JSON.parse(text);
       } catch (e) {
         setStatus("Die Datei konnte nicht gelesen werden. Ist es eine Sicherungsdatei dieser App?");
         return;
       }
-      var daten = paket && paket.daten ? paket.daten : paket;
-      if (!daten || typeof daten !== "object") {
-        setStatus("Die Datei enthält keine gültigen Daten.");
-        return;
-      }
-      var frage = "Sicherung einlesen?\n\n" +
-        "Vorhandene Daten in diesem Browser werden dabei ersetzt:\n" +
-        "· " + store.members.length + " Personen\n" +
-        "· " + store.vorlagen.length + " Vorlagen\n" +
-        "· " + store.sessions.length + " Sitzungen";
-      if (!confirm(frage)) return;
 
-      store = normalizeStore(daten);
-      persist();
-      alleAnzeigen();
-      setStatus("Sicherung eingelesen: " + store.members.length + " Personen, " +
-        store.vorlagen.length + " Vorlagen, " + store.sessions.length + " Sitzungen.");
-    };
-    leser.readAsText(datei);
+      function weiterMit(daten) {
+        if (!daten || typeof daten !== "object") {
+          setStatus("Die Datei enthält keine gültigen Daten.");
+          return;
+        }
+        var frage = "Sicherung einlesen?\n\n" +
+          "Vorhandene Daten in diesem Browser werden dabei ersetzt:\n" +
+          "· " + store.members.length + " Personen\n" +
+          "· " + store.vorlagen.length + " Vorlagen\n" +
+          "· " + store.sessions.length + " Sitzungen";
+        if (!confirm(frage)) return;
+
+        store = normalizeStore(daten);
+        persist();
+        alleAnzeigen();
+        setStatus("Sicherung eingelesen: " + store.members.length + " Personen, " +
+          store.vorlagen.length + " Vorlagen, " + store.sessions.length + " Sitzungen.");
+      }
+
+      if (paket && paket.verschluesselt) {
+        passwortDialog({
+          titel: "Sicherung entschlüsseln",
+          hinweis: "Bitte das Passwort eingeben, mit dem diese Sicherung erstellt wurde.",
+          bestaetigen: false,
+          erlaubeUeberspringen: false
+        }).then(function (antwort) {
+          if (!antwort) return; // abgebrochen
+          entschluesseln(paket, antwort.passwort)
+            .then(function (klartext) { weiterMit(JSON.parse(klartext)); })
+            .catch(function () {
+              setStatus("Falsches Passwort oder beschädigte Datei — Entschlüsseln fehlgeschlagen.");
+            });
+        });
+      } else {
+        weiterMit(paket && paket.daten ? paket.daten : paket);
+      }
+    });
   }
 
   /* =====================================================================
@@ -910,7 +1071,10 @@
       "btn-docx-einladung", "btn-print-einladung", "btn-docx-anwesenheit",
       "btn-print-anwesenheit", "btn-mail", "btn-copy-mail", "btn-ics",
       "btn-delete-session", "status",
-      "erste-schritte", "schritt-1", "schritt-2", "schritt-3"
+      "erste-schritte", "schritt-1", "schritt-2", "schritt-3",
+      "pw-modal", "pw-modal-title", "pw-modal-hint", "pw-modal-input",
+      "pw-modal-confirm", "pw-modal-confirm-wrap", "pw-modal-error",
+      "pw-modal-ok", "pw-modal-skip", "pw-modal-cancel"
     ].forEach(function (id) {
       el[id] = $(id);
     });

@@ -38,16 +38,29 @@ einzige Datei erzeugt, z. B. `PR-Einladung_Sicherung_2026-07-01.json`. Sie
 enthält alles: Mitglieder, alle gespeicherten Vorlagen, alle Sitzungen und die
 Einstellungen.
 
+Vor dem Erstellen fragt die App nach einem **Passwort**:
+
+- **Mit Passwort** wird die Datei mit AES-256 verschlüsselt. Ohne das
+  Passwort ist der Inhalt für niemanden lesbar — auch nicht durch Öffnen der
+  Datei in einem Texteditor. Das Passwort wird nirgends gespeichert; ohne
+  Passwort gibt es keinen Weg, die Datei wieder zu entschlüsseln. Gut
+  merken oder in einem Passwort-Manager ablegen.
+- **„Ohne Passwort“** erzeugt die Datei wie bisher im Klartext.
+
+Beim Einlesen einer verschlüsselten Sicherung fragt die App automatisch nach
+dem Passwort.
+
 Diese Datei auf den anderen Rechner kopieren (USB-Stick, verschlüsselter
 Cloud-Speicher der Dienststelle o. Ä.) und dort über **„Daten laden“**
 einlesen. Die App fragt vor dem Einlesen noch einmal nach, weil die
 vorhandenen Daten auf dem Zielrechner dabei ersetzt werden.
 
 Empfehlung: Diese Sicherungsdatei regelmäßig erstellen, auch als Schutz
-gegen Datenverlust auf dem eigenen Rechner. Da sie echte Namen und
-E-Mail-Adressen enthält, gehört sie **nicht** in ein öffentliches
-GitHub-Repository – sie ist über die `.gitignore` bereits davon
-ausgeschlossen.
+gegen Datenverlust auf dem eigenen Rechner — am besten mit Passwort, gerade
+wenn sie auf einem USB-Stick oder Netzlaufwerk der Dienststelle liegt. Da sie
+(im unverschlüsselten Fall) echte Namen und E-Mail-Adressen enthält, gehört
+sie **nicht** in ein öffentliches GitHub-Repository – sie ist über die
+`.gitignore` bereits davon ausgeschlossen.
 
 ## Listen und Ersatzmitglieder
 

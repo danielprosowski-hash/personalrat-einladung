@@ -221,6 +221,24 @@
   </main>
 </div>
 
+<!-- ============ Passwort-Dialog (Sichern/Laden verschlüsseln) ============ -->
+<div id="pw-modal" class="modal-overlay" hidden>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="pw-modal-title">
+    <h3 id="pw-modal-title">Sicherung</h3>
+    <p id="pw-modal-hint" class="hint"></p>
+    <label><span>Passwort</span>
+      <input id="pw-modal-input" type="password" autocomplete="new-password"></label>
+    <label id="pw-modal-confirm-wrap"><span>Passwort wiederholen</span>
+      <input id="pw-modal-confirm" type="password" autocomplete="new-password"></label>
+    <p id="pw-modal-error" class="notice" hidden></p>
+    <div class="row modal-actions">
+      <button id="pw-modal-skip" class="secondary mini" type="button">Ohne Passwort</button>
+      <button id="pw-modal-cancel" class="secondary mini" type="button">Abbrechen</button>
+      <button id="pw-modal-ok" type="button">Weiter</button>
+    </div>
+  </div>
+</div>
+
 <script src="app.js"></script>
 </body>
 </html>
