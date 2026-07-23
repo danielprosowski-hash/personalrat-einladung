@@ -780,14 +780,19 @@
       return x.getFullYear() + pad(x.getMonth() + 1) + pad(x.getDate()) + "T" +
              pad(x.getHours()) + pad(x.getMinutes()) + "00";
     }
+    /* Zeilen nach RFC 5545 umbrechen: hoechstens 75 Zeichen je Zeile,
+       Folgezeilen mit einem fuehrenden Leerzeichen (das beim Einlesen
+       wieder entfernt wird). Konservativ bei 74 Zeichen, damit auch
+       Umlaute (in UTF-8 zwei Byte) die Grenze nicht ueberschreiten. */
     function falten(zeile) {
       var out = [];
       var rest = zeile;
-      while (rest.length > 73) {
-        out.push(out.length ? " " + rest.slice(0, 72) : rest.slice(0, 73));
-        rest = rest.slice(out.length ? 72 : 73);
+      out.push(rest.slice(0, 74));
+      rest = rest.slice(74);
+      while (rest.length) {
+        out.push(" " + rest.slice(0, 73));
+        rest = rest.slice(73);
       }
-      out.push(out.length ? " " + rest : rest);
       return out.join("\r\n");
     }
     function esc(v) {
