@@ -294,6 +294,7 @@ button.icon:hover { color: var(--ink); background: var(--bg); }
 .danger-zone { padding: 12px 18px; }
 
 /* ---------- Passwort-Dialog ---------- */
+.modal-overlay[hidden] { display: none; }
 .modal-overlay {
   position: fixed; inset: 0; z-index: 100;
   background: rgba(0, 0, 0, .45);
