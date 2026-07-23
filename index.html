@@ -29,9 +29,9 @@
     <section id="erste-schritte" class="block steps-block" hidden>
       <h2>Erste Schritte</h2>
       <ol class="steps-list">
-        <li id="schritt-1" data-target="det-members">Mitglieder erfassen</li>
-        <li id="schritt-2" data-target="det-settings">Briefkopf ausfüllen</li>
-        <li id="schritt-3" data-target="">Sitzung anlegen (Datum, Raum)</li>
+        <li id="schritt-1">Mitglieder erfassen</li>
+        <li id="schritt-2">Briefkopf ausfüllen</li>
+        <li id="schritt-3">Sitzung anlegen (Datum, Raum)</li>
       </ol>
     </section>
 
@@ -77,59 +77,9 @@
     </section>
 
     <section class="block">
-      <details id="det-settings">
-        <summary>Einstellungen &amp; Standardtexte</summary>
-        <div class="block-body">
-
-          <h3>Briefkopf</h3>
-          <label><span>Dienststelle</span>
-            <input id="set-organisation" type="text" placeholder="z. B. Stadt Musterstadt"></label>
-          <label><span>Gremium</span>
-            <input id="set-gremium" type="text" placeholder="-Der Personalrat-"></label>
-          <label><span>Ort in der Datumszeile</span>
-            <input id="set-ort" type="text" placeholder="z. B. Musterstadt"></label>
-
-          <h3>Verteiler</h3>
-          <label><span>Empfängergruppen (eine je Zeile)</span>
-            <textarea id="set-verteiler" rows="4"></textarea></label>
-
-          <h3>Unterschrift</h3>
-          <label><span>Name</span>
-            <input id="set-vorsitz-name" type="text" placeholder="Nachname"></label>
-          <label><span>Funktionsbezeichnung</span>
-            <input id="set-vorsitz-funktion" type="text" placeholder="Personalratsvorsitzende"></label>
-
-          <h3>Texte</h3>
-          <label><span>Einladungssatz</span>
-            <textarea id="set-einladungstext" rows="3"></textarea>
-            <small>Platzhalter: {nummer} {wochentag} {datum} {uhrzeit} {raum}</small></label>
-          <label><span>Hinweis bei Verhinderung (kursiv)</span>
-            <textarea id="set-hinweistext" rows="4"></textarea></label>
-          <label class="check"><input id="set-vertraulichkeit-an" type="checkbox">
-            <span>Vertraulichkeitshinweis unter der Tagesordnung ausgeben</span></label>
-          <label><span>Vertraulichkeitshinweis</span>
-            <textarea id="set-vertraulichkeit" rows="3"></textarea></label>
-
-          <h3>Tagesordnung</h3>
-          <label><span>Feste Punkte am Anfang (eine Zeile je Punkt)</span>
-            <textarea id="set-standard-tops" rows="5"></textarea>
-            <small>Platzhalter {protokolldatum} wird durch das Datum der Vorsitzung ersetzt.</small></label>
-          <label><span>Feste Punkte am Ende</span>
-            <textarea id="set-schluss-tops" rows="3"></textarea></label>
-          <label><span>Textbausteine für wiederkehrende Punkte</span>
-            <textarea id="set-bausteine" rows="6"></textarea></label>
-
-          <h3>Sonstiges</h3>
-          <label><span>Ladungsfrist in Tagen</span>
-            <input id="set-frist" type="number" min="0" max="60"></label>
-          <label><span>Dauer der Sitzung in Minuten (für die Termindatei)</span>
-            <input id="set-dauer" type="number" min="15" step="15"></label>
-          <label><span>Namensschema für Dateien</span>
-            <input id="set-dateiname" type="text">
-            <small>Platzhalter: {datum} {dokument} {nummer}</small></label>
-
-        </div>
-      </details>
+      <button id="btn-open-settings" class="settings-opener" type="button">
+        ⚙ Einstellungen &amp; Standardtexte
+      </button>
     </section>
 
     <section class="block">
@@ -235,6 +185,66 @@
       <button id="pw-modal-skip" class="secondary mini" type="button">Ohne Passwort</button>
       <button id="pw-modal-cancel" class="secondary mini" type="button">Abbrechen</button>
       <button id="pw-modal-ok" type="button">Weiter</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ Einstellungen & Standardtexte (eigenes Overlay) ============ -->
+<div id="settings-modal" class="modal-overlay" hidden>
+  <div class="modal-box settings-box" role="dialog" aria-modal="true" aria-labelledby="settings-modal-title">
+    <div class="modal-header">
+      <h3 id="settings-modal-title">Einstellungen &amp; Standardtexte</h3>
+      <button id="btn-close-settings" class="icon" type="button" title="Schließen">×</button>
+    </div>
+    <div class="modal-scroll">
+
+      <h3>Briefkopf</h3>
+      <label><span>Dienststelle</span>
+        <input id="set-organisation" type="text" placeholder="z. B. Stadt Musterstadt"></label>
+      <label><span>Gremium</span>
+        <input id="set-gremium" type="text" placeholder="-Der Personalrat-"></label>
+      <label><span>Ort in der Datumszeile</span>
+        <input id="set-ort" type="text" placeholder="z. B. Musterstadt"></label>
+
+      <h3>Verteiler</h3>
+      <label><span>Empfängergruppen (eine je Zeile)</span>
+        <textarea id="set-verteiler" rows="4"></textarea></label>
+
+      <h3>Unterschrift</h3>
+      <label><span>Name</span>
+        <input id="set-vorsitz-name" type="text" placeholder="Nachname"></label>
+      <label><span>Funktionsbezeichnung</span>
+        <input id="set-vorsitz-funktion" type="text" placeholder="Personalratsvorsitzende"></label>
+
+      <h3>Texte</h3>
+      <label><span>Einladungssatz</span>
+        <textarea id="set-einladungstext" rows="3"></textarea>
+        <small>Platzhalter: {nummer} {wochentag} {datum} {uhrzeit} {raum}</small></label>
+      <label><span>Hinweis bei Verhinderung (kursiv)</span>
+        <textarea id="set-hinweistext" rows="4"></textarea></label>
+      <label class="check"><input id="set-vertraulichkeit-an" type="checkbox">
+        <span>Vertraulichkeitshinweis unter der Tagesordnung ausgeben</span></label>
+      <label><span>Vertraulichkeitshinweis</span>
+        <textarea id="set-vertraulichkeit" rows="3"></textarea></label>
+
+      <h3>Tagesordnung</h3>
+      <label><span>Feste Punkte am Anfang (eine Zeile je Punkt)</span>
+        <textarea id="set-standard-tops" rows="5"></textarea>
+        <small>Platzhalter {protokolldatum} wird durch das Datum der Vorsitzung ersetzt.</small></label>
+      <label><span>Feste Punkte am Ende</span>
+        <textarea id="set-schluss-tops" rows="3"></textarea></label>
+      <label><span>Textbausteine für wiederkehrende Punkte</span>
+        <textarea id="set-bausteine" rows="6"></textarea></label>
+
+      <h3>Sonstiges</h3>
+      <label><span>Ladungsfrist in Tagen</span>
+        <input id="set-frist" type="number" min="0" max="60"></label>
+      <label><span>Dauer der Sitzung in Minuten (für die Termindatei)</span>
+        <input id="set-dauer" type="number" min="15" step="15"></label>
+      <label><span>Namensschema für Dateien</span>
+        <input id="set-dateiname" type="text">
+        <small>Platzhalter: {datum} {dokument} {nummer}</small></label>
+
     </div>
   </div>
 </div>

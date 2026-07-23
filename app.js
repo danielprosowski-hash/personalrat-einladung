@@ -1115,7 +1115,8 @@
       "erste-schritte", "schritt-1", "schritt-2", "schritt-3",
       "pw-modal", "pw-modal-title", "pw-modal-hint", "pw-modal-input",
       "pw-modal-confirm", "pw-modal-confirm-wrap", "pw-modal-error",
-      "pw-modal-ok", "pw-modal-skip", "pw-modal-cancel"
+      "pw-modal-ok", "pw-modal-skip", "pw-modal-cancel",
+      "btn-open-settings", "settings-modal", "btn-close-settings"
     ].forEach(function (id) {
       el[id] = $(id);
     });
@@ -1138,6 +1139,18 @@
     zeigeErsteSchritte();
   }
 
+  /* Einstellungen & Standardtexte: eigenes Overlay statt Seitenleiste,
+     damit die Seitenleiste kurz und uebersichtlich bleibt. */
+  function oeffneEinstellungen() {
+    el["settings-modal"].hidden = false;
+    var erstesFeld = el["settings-modal"].querySelector("input, textarea, select");
+    if (erstesFeld) erstesFeld.focus({ preventScroll: true });
+  }
+
+  function schliesseEinstellungen() {
+    el["settings-modal"].hidden = true;
+  }
+
   /* Kurzer Einstiegsfahrplan fuer den ersten Besuch. Verschwindet, sobald
      Mitglieder, Briefkopf und ein Sitzungstermin vorhanden sind. Beim
      allerersten, vollstaendig leeren Start werden die zugehoerigen
@@ -1153,7 +1166,7 @@
     if (!ersteSchritteInitialGeprueft) {
       ersteSchritteInitialGeprueft = true;
       if (!schritt1Erledigt) document.getElementById("det-members").open = true;
-      if (!schritt2Erledigt) document.getElementById("det-settings").open = true;
+      if (!schritt2Erledigt) oeffneEinstellungen();
     }
 
     var alleErledigt = schritt1Erledigt && schritt2Erledigt && schritt3Erledigt;
@@ -1690,21 +1703,33 @@
   }
 
   function bindeErsteSchritte() {
-    ["schritt-1", "schritt-2", "schritt-3"].forEach(function (id) {
-      el[id].addEventListener("click", function () {
-        if (el[id].classList.contains("done")) return;
-        var ziel = el[id].getAttribute("data-target");
-        if (ziel) {
-          var details = document.getElementById(ziel);
-          details.open = true;
-          details.scrollIntoView({ behavior: "smooth", block: "start" });
-          var erstesFeld = details.querySelector("input, textarea, select");
-          if (erstesFeld) erstesFeld.focus({ preventScroll: true });
-        } else {
-          el["s-datum"].scrollIntoView({ behavior: "smooth", block: "center" });
-          el["s-datum"].focus({ preventScroll: true });
-        }
-      });
+    el["schritt-1"].addEventListener("click", function () {
+      if (el["schritt-1"].classList.contains("done")) return;
+      var details = document.getElementById("det-members");
+      details.open = true;
+      details.scrollIntoView({ behavior: "smooth", block: "start" });
+      var erstesFeld = details.querySelector("input, textarea, select");
+      if (erstesFeld) erstesFeld.focus({ preventScroll: true });
+    });
+    el["schritt-2"].addEventListener("click", function () {
+      if (el["schritt-2"].classList.contains("done")) return;
+      oeffneEinstellungen();
+    });
+    el["schritt-3"].addEventListener("click", function () {
+      if (el["schritt-3"].classList.contains("done")) return;
+      el["s-datum"].scrollIntoView({ behavior: "smooth", block: "center" });
+      el["s-datum"].focus({ preventScroll: true });
+    });
+  }
+
+  function bindeEinstellungenOverlay() {
+    el["btn-open-settings"].addEventListener("click", oeffneEinstellungen);
+    el["btn-close-settings"].addEventListener("click", schliesseEinstellungen);
+    el["settings-modal"].addEventListener("click", function (e) {
+      if (e.target === el["settings-modal"]) schliesseEinstellungen();
+    });
+    el["settings-modal"].addEventListener("keydown", function (e) {
+      if (e.key === "Escape") schliesseEinstellungen();
     });
   }
 
@@ -1884,6 +1909,7 @@
   bindeEinstellungen();
   bindeAktionen();
   bindeErsteSchritte();
+  bindeEinstellungenOverlay();
   alleAnzeigen();
 
   window.addEventListener("beforeunload", persist);

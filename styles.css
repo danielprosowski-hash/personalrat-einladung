@@ -314,6 +314,31 @@ button.icon:hover { color: var(--ink); background: var(--bg); }
 }
 .modal-actions { justify-content: flex-end; margin-top: 14px; flex-wrap: wrap; }
 
+/* ---------- Einstellungen-Overlay (groesser, mit eigenem Scrollbereich) ---------- */
+.settings-opener {
+  width: 100%; text-align: left;
+  background: transparent; color: var(--ink); border-color: var(--line);
+}
+.settings-opener:hover { background: var(--bg); }
+
+.settings-box {
+  max-width: 640px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+}
+.settings-box .modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 20px; border-bottom: 1px solid var(--line);
+  flex: none;
+}
+.settings-box .modal-header h3 { margin: 0; }
+.settings-box .modal-scroll {
+  overflow-y: auto;
+  padding: 4px 20px 20px;
+}
+
 @media print {
   .app-header, .sidebar, .actions, .danger-zone { display: none; }
 }
