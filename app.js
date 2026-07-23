@@ -142,12 +142,16 @@
   }
 
   function normalizeMember(m) {
+    var reihenfolge = m.reihenfolge;
+    reihenfolge = reihenfolge === "" || reihenfolge == null || isNaN(Number(reihenfolge))
+      ? null : Number(reihenfolge);
     return {
       id: m.id || newId(),
       name: m.name || "",
       funktion: FUNKTIONEN.indexOf(m.funktion) >= 0 ? m.funktion : "Mitglied",
       email: m.email || "",
-      liste: m.liste || ""
+      liste: m.liste || "",
+      reihenfolge: reihenfolge
     };
   }
 
@@ -306,12 +310,38 @@
 
   /* Ids der abgesagten Mitglieder, fuer die ein eingeladenes Ersatzmitglied
      einspringt. */
+  /* Folgt der Vertretungskette (ein Ersatzmitglied kann selbst wieder durch
+     das naechste Ersatzmitglied ersetzt werden) bis zum Ursprung. Gibt null
+     zurueck, wenn fuer diese Id keine Vertretung hinterlegt ist. */
+  function wurzelVertretenId(s, id) {
+    var v = s.vertretung || {};
+    if (!v[id]) return null;
+    var current = id;
+    var gesehen = {};
+    while (v[current] && !gesehen[current]) {
+      gesehen[current] = true;
+      current = v[current];
+    }
+    return current;
+  }
+
+  /* Alle Ids, deren Sitz durch eine Vertretungskette bereits von einer
+     eingeladenen Person eingenommen wird - schliesst auch zwischenzeitlich
+     abgesagte Ersatzmitglieder innerhalb der Kette mit ein. */
   function ersetzteMitgliedIds(s) {
     var ids = eingeladenIds(s);
     var v = s.vertretung || {};
-    return Object.keys(v)
-      .filter(function (ersatzId) { return ids.indexOf(ersatzId) >= 0; })
-      .map(function (ersatzId) { return v[ersatzId]; });
+    var ausgeschlossen = {};
+    ids.forEach(function (ersatzId) {
+      var current = ersatzId;
+      var gesehen = {};
+      while (v[current] && !gesehen[current]) {
+        gesehen[current] = true;
+        current = v[current];
+        ausgeschlossen[current] = true;
+      }
+    });
+    return Object.keys(ausgeschlossen);
   }
 
   /* Personen fuer die Anwesenheitsliste: eingeladene Personen, jedoch ohne
@@ -324,12 +354,14 @@
     });
   }
 
-  /* Funktionsbezeichnung, bei Ersatzmitgliedern ergaenzt um das vertretene
-     Mitglied: z. B. "Ersatzmitglied (für Erika Musterfrau)". */
+  /* Funktionsbezeichnung, bei Ersatzmitgliedern ergaenzt um das urspruenglich
+     vertretene Mitglied: z. B. "Ersatzmitglied (für Erika Musterfrau)". Bei
+     mehrstufiger Vertretung (Ersatz vertritt Ersatz) wird bis zum Ursprung
+     aufgeloest, damit immer der Name des ordentlichen Mitglieds erscheint. */
   function funktionMitVertretung(s, m) {
-    var vertretenId = (s.vertretung || {})[m.id];
-    if (vertretenId) {
-      var vertreten = memberById(vertretenId);
+    var wurzelId = wurzelVertretenId(s, m.id);
+    if (wurzelId) {
+      var vertreten = memberById(wurzelId);
       if (vertreten && (vertreten.name || "").trim()) {
         return m.funktion + " (für " + vertreten.name.trim() + ")";
       }
@@ -1283,6 +1315,19 @@
       });
       tdListe.appendChild(iListe);
 
+      var tdRang = document.createElement("td");
+      var iRang = document.createElement("input");
+      iRang.type = "number";
+      iRang.min = "1";
+      iRang.value = m.reihenfolge == null ? "" : String(m.reihenfolge);
+      iRang.placeholder = "z. B. 1";
+      iRang.title = "Rangfolge innerhalb der Liste, in der Ersatzmitglieder nachrücken (1 zuerst).";
+      iRang.addEventListener("input", function () {
+        m.reihenfolge = iRang.value === "" ? null : Number(iRang.value);
+        scheduleSave(); zeigeTeilnehmende();
+      });
+      tdRang.appendChild(iRang);
+
       var tdWeg = document.createElement("td");
       var bWeg = document.createElement("button");
       bWeg.type = "button";
@@ -1296,7 +1341,7 @@
       });
       tdWeg.appendChild(bWeg);
 
-      [tdName, tdFunk, tdMail, tdListe, tdWeg].forEach(function (td) { tr.appendChild(td); });
+      [tdName, tdFunk, tdMail, tdListe, tdRang, tdWeg].forEach(function (td) { tr.appendChild(td); });
       tb.appendChild(tr);
     });
 
@@ -1513,7 +1558,7 @@
         zeigeTeilnehmende();
       });
 
-      var vertretenId = (s.vertretung || {})[m.id];
+      var vertretenId = wurzelVertretenId(s, m.id);
       var vertretenName = vertretenId && memberById(vertretenId)
         ? (memberById(vertretenId).name || "").trim() : "";
 
@@ -1581,29 +1626,42 @@
       }
 
       var eingeladen = eingeladenIds(s);
-      var ersatz = store.members.filter(function (x) {
-        return x.funktion === "Ersatzmitglied" && x.liste === m.liste;
+      /* Kandidaten: gleiche Liste, nicht die abgesagte Person selbst (sie
+         koennte selbst ein bereits abgesagtes Ersatzmitglied sein) und nicht
+         bereits selbst abgesagt. Sortiert nach der hinterlegten Reihenfolge,
+         damit immer das naechste Ersatzmitglied vorgeschlagen wird. */
+      var ersatzKandidaten = store.members.filter(function (x) {
+        return x.funktion === "Ersatzmitglied" && x.liste === m.liste &&
+          x.id !== m.id && s.absagen.indexOf(x.id) < 0;
       });
-      var offen = ersatz.filter(function (x) { return eingeladen.indexOf(x.id) < 0; });
+      ersatzKandidaten.sort(function (a, b) {
+        var ra = a.reihenfolge == null ? Infinity : Number(a.reihenfolge);
+        var rb = b.reihenfolge == null ? Infinity : Number(b.reihenfolge);
+        return ra - rb;
+      });
+      var offenMitRang = ersatzKandidaten
+        .map(function (x, i) { return { x: x, rang: i + 1 }; })
+        .filter(function (o) { return eingeladen.indexOf(o.x.id) < 0; });
 
-      if (!ersatz.length) {
-        text.textContent += " — für Liste " + m.liste + " ist kein Ersatzmitglied erfasst.";
-      } else if (!offen.length) {
+      if (!ersatzKandidaten.length) {
+        text.textContent += " — für Liste " + m.liste + " ist kein weiteres Ersatzmitglied erfasst.";
+      } else if (!offenMitRang.length) {
         text.textContent += " — Ersatzmitglied aus Liste " + m.liste + " ist bereits eingeladen.";
       } else {
-        text.textContent += " — Ersatz aus Liste " + m.liste + ":";
-        offen.forEach(function (x) {
+        text.textContent += " — Ersatz aus Liste " + m.liste + " nach Reihenfolge:";
+        offenMitRang.forEach(function (o) {
+          var x = o.x;
           var b = document.createElement("button");
           b.type = "button";
           b.className = "mini secondary";
-          b.textContent = (x.name || "(ohne Namen)") + " einladen";
+          b.textContent = o.rang + ". " + (x.name || "(ohne Namen)") + " einladen";
           if (!x.email) b.title = "Für diese Person ist noch keine E-Mail-Adresse hinterlegt.";
           b.addEventListener("click", function () {
             var aktuell = eingeladenIds(s);
             if (aktuell.indexOf(x.id) < 0) aktuell.push(x.id);
             s.eingeladen = aktuell;
             if (!s.vertretung) s.vertretung = {};
-            s.vertretung[x.id] = m.id; // Ersatz x vertritt Mitglied m
+            s.vertretung[x.id] = m.id; // Ersatz x vertritt Mitglied m (bzw. dessen Kette)
             touchSession();
             zeigeTeilnehmende();
             setStatus((x.name || "Ersatzmitglied") + " wurde als Vertretung für " +

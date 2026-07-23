@@ -69,10 +69,23 @@ Jede Person bekommt in der Mitgliederliste ein Feld „Liste“ (z. B. „1“ o
 Listenbezeichnung. Für Ersatzmitglieder unbedingt auch die E-Mail-Adresse
 eintragen — nur so kann die App sie mit einem Klick mit einladen.
 
+Zusätzlich gibt es das Feld „Reihenfolge“: eine Zahl (1, 2, 3, …), die
+festlegt, in welcher Rangfolge die Ersatzmitglieder einer Liste nachrücken.
+Bei ordentlichen Mitgliedern bleibt das Feld leer.
+
 Meldet sich jemand ab: bei „Teilnehmende“ auf „abgesagt“ klicken. Die App
-zeigt darunter automatisch das passende Ersatzmitglied derselben Liste an,
-mit einem Knopf „… einladen“. Ein Klick reicht, die Person ist danach
-angehakt und wird bei „E-Mail“ und in der Anwesenheitsliste berücksichtigt.
+zeigt darunter automatisch die Ersatzmitglieder derselben Liste an — sortiert
+und nummeriert nach der hinterlegten Reihenfolge (1., 2., …) — mit einem
+Knopf „… einladen“. Ein Klick reicht, die Person ist danach angehakt und wird
+bei „E-Mail“ und in der Anwesenheitsliste berücksichtigt.
+
+Sagt ein bereits eingeladenes Ersatzmitglied selbst ab (genau derselbe
+„abgesagt“-Knopf wie bei ordentlichen Mitgliedern), schlägt die App
+automatisch das nächste Ersatzmitglied der Liste vor — die Kette rückt so
+beliebig oft nach. Auf der Anwesenheitsliste erscheint am Ende nur die
+tatsächlich anwesende Person, mit dem Vermerk, welches ordentliche Mitglied
+ursprünglich vertreten wird (z. B. „Ersatzmitglied (für Erika Musterfrau)“) —
+auch wenn dazwischen mehrere Ersatzmitglieder abgesagt haben.
 
 ## Vorlage speichern
 
