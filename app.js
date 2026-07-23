@@ -80,6 +80,7 @@
       tops: [{ titel: "", zusatz: "" }],
       eingeladen: null, // null = alle Stimmberechtigten
       absagen: [],
+      vertretung: {}, // Ersatzmitglied-Id -> Id des vertretenen Mitglieds
       erstellt: new Date().toISOString(),
       geaendert: new Date().toISOString()
     };
@@ -163,6 +164,8 @@
       : [{ titel: "", zusatz: "" }];
     out.absagen = Array.isArray(out.absagen) ? out.absagen : [];
     out.eingeladen = Array.isArray(out.eingeladen) ? out.eingeladen : null;
+    out.vertretung = out.vertretung && typeof out.vertretung === "object" && !Array.isArray(out.vertretung)
+      ? out.vertretung : {};
     return out;
   }
 
@@ -301,6 +304,39 @@
     return store.members.filter(function (m) { return ids.indexOf(m.id) >= 0; });
   }
 
+  /* Ids der abgesagten Mitglieder, fuer die ein eingeladenes Ersatzmitglied
+     einspringt. */
+  function ersetzteMitgliedIds(s) {
+    var ids = eingeladenIds(s);
+    var v = s.vertretung || {};
+    return Object.keys(v)
+      .filter(function (ersatzId) { return ids.indexOf(ersatzId) >= 0; })
+      .map(function (ersatzId) { return v[ersatzId]; });
+  }
+
+  /* Personen fuer die Anwesenheitsliste: eingeladene Personen, jedoch ohne
+     abgesagte Mitglieder, die bereits durch ein Ersatzmitglied vertreten
+     sind. */
+  function anwesenheitsPersonen(s) {
+    var ersetzt = ersetzteMitgliedIds(s);
+    return eingeladenePersonen(s).filter(function (m) {
+      return !(s.absagen.indexOf(m.id) >= 0 && ersetzt.indexOf(m.id) >= 0);
+    });
+  }
+
+  /* Funktionsbezeichnung, bei Ersatzmitgliedern ergaenzt um das vertretene
+     Mitglied: z. B. "Ersatzmitglied (für Erika Musterfrau)". */
+  function funktionMitVertretung(s, m) {
+    var vertretenId = (s.vertretung || {})[m.id];
+    if (vertretenId) {
+      var vertreten = memberById(vertretenId);
+      if (vertreten && (vertreten.name || "").trim()) {
+        return m.funktion + " (für " + vertreten.name.trim() + ")";
+      }
+    }
+    return m.funktion;
+  }
+
   function memberById(id) {
     for (var i = 0; i < store.members.length; i++) {
       if (store.members[i].id === id) return store.members[i];
@@ -404,9 +440,9 @@
     b.push({ typ: "leer" });
 
     var reihen = [];
-    var personen = eingeladenePersonen(s);
+    var personen = anwesenheitsPersonen(s);
     personen.forEach(function (m, i) {
-      reihen.push([String(i + 1), m.name || "", m.funktion, ""]);
+      reihen.push([String(i + 1), m.name || "", funktionMitVertretung(s, m), ""]);
     });
     var start = personen.length;
     for (var g = 0; g < (s.gaesteZeilen || 0); g++) {
@@ -1456,17 +1492,24 @@
           if (aktuell.indexOf(m.id) < 0) aktuell.push(m.id);
         } else {
           aktuell = aktuell.filter(function (x) { return x !== m.id; });
+          // Wird ein Ersatzmitglied wieder ausgeladen, entfaellt seine Vertretung.
+          if (s.vertretung && s.vertretung[m.id]) delete s.vertretung[m.id];
         }
         s.eingeladen = aktuell;
         touchSession();
         zeigeTeilnehmende();
       });
 
+      var vertretenId = (s.vertretung || {})[m.id];
+      var vertretenName = vertretenId && memberById(vertretenId)
+        ? (memberById(vertretenId).name || "").trim() : "";
+
       var name = document.createElement("span");
       name.className = "name";
       name.innerHTML = htmlEscape(m.name || "(ohne Namen)") +
         ' <span class="role">' + htmlEscape(m.funktion) +
-        (m.liste ? " · Liste " + htmlEscape(m.liste) : "") + "</span>";
+        (m.liste ? " · Liste " + htmlEscape(m.liste) : "") +
+        (vertretenName ? " · vertritt " + htmlEscape(vertretenName) : "") + "</span>";
 
       var absage = document.createElement("span");
       absage.className = "absage";
@@ -1475,6 +1518,12 @@
       absage.addEventListener("click", function () {
         if (abgesagt) {
           s.absagen = s.absagen.filter(function (x) { return x !== m.id; });
+          // Nimmt das Mitglied die Absage zurueck, entfallen Vertretungen fuer es.
+          if (s.vertretung) {
+            Object.keys(s.vertretung).forEach(function (ersatzId) {
+              if (s.vertretung[ersatzId] === m.id) delete s.vertretung[ersatzId];
+            });
+          }
         } else {
           s.absagen.push(m.id);
         }
@@ -1540,9 +1589,12 @@
             var aktuell = eingeladenIds(s);
             if (aktuell.indexOf(x.id) < 0) aktuell.push(x.id);
             s.eingeladen = aktuell;
+            if (!s.vertretung) s.vertretung = {};
+            s.vertretung[x.id] = m.id; // Ersatz x vertritt Mitglied m
             touchSession();
             zeigeTeilnehmende();
-            setStatus((x.name || "Ersatzmitglied") + " wurde zu den Eingeladenen hinzugefügt.");
+            setStatus((x.name || "Ersatzmitglied") + " wurde als Vertretung für " +
+              (m.name || "das abgesagte Mitglied") + " eingeladen.");
           });
           zeile.appendChild(b);
         });
