@@ -125,10 +125,39 @@
     return normalizeStore(parsed);
   }
 
+  /* Einstellungen aus einer fremden oder beschaedigten Datei koennen falsche
+     Datentypen enthalten (z. B. Text statt Liste). Ohne Pruefung wuerde die
+     Anzeige beim Aufbau abbrechen und - da der Zustand gespeichert wird -
+     auch nach jedem Neustart wieder abbrechen. Darum jeden Wert auf den
+     erwarteten Typ bringen und sonst den Standardwert nehmen. */
+  function normalizeSettings(raw) {
+    var vorgabe = defaultSettings();
+    var q = raw && typeof raw === "object" && !Array.isArray(raw) ? raw : {};
+    var out = {};
+
+    Object.keys(vorgabe).forEach(function (schluessel) {
+      var standard = vorgabe[schluessel];
+      var wert = Object.prototype.hasOwnProperty.call(q, schluessel) ? q[schluessel] : undefined;
+
+      if (Array.isArray(standard)) {
+        out[schluessel] = Array.isArray(wert)
+          ? wert.filter(function (z) { return typeof z === "string"; })
+          : standard;
+      } else if (typeof standard === "number") {
+        out[schluessel] = typeof wert === "number" && isFinite(wert) ? wert : standard;
+      } else if (typeof standard === "boolean") {
+        out[schluessel] = typeof wert === "boolean" ? wert : standard;
+      } else {
+        out[schluessel] = typeof wert === "string" ? wert : standard;
+      }
+    });
+    return out;
+  }
+
   function normalizeStore(raw) {
     var s = raw && typeof raw === "object" ? raw : {};
     var out = {
-      settings: Object.assign(defaultSettings(), s.settings || {}),
+      settings: normalizeSettings(s.settings),
       members: Array.isArray(s.members) ? s.members.map(normalizeMember) : [],
       sessions: Array.isArray(s.sessions) ? s.sessions.map(normalizeSession) : [],
       vorlagen: Array.isArray(s.vorlagen) ? s.vorlagen : [],
@@ -161,11 +190,19 @@
     out.id = out.id || newId();
     out.tops = Array.isArray(x && x.tops) && x.tops.length
       ? x.tops.map(function (t) {
-          return typeof t === "string"
-            ? { titel: t, zusatz: "" }
-            : { titel: t.titel || "", zusatz: t.zusatz || "" };
+          if (typeof t === "string") return { titel: t, zusatz: "" };
+          var o = t && typeof t === "object" ? t : {};
+          return {
+            titel: typeof o.titel === "string" ? o.titel : "",
+            zusatz: typeof o.zusatz === "string" ? o.zusatz : ""
+          };
         })
       : [{ titel: "", zusatz: "" }];
+    /* Begrenzen: ein unsinniger Wert aus einer fremden Datei wuerde sonst die
+       Schleife fuer die Gaestezeilen praktisch endlos laufen lassen. */
+    var gaeste = Number(out.gaesteZeilen);
+    out.gaesteZeilen = isFinite(gaeste) && gaeste > 0 ? Math.min(Math.floor(gaeste), 50) : 0;
+    out.nummer = isFinite(Number(out.nummer)) ? Number(out.nummer) : 1;
     out.absagen = Array.isArray(out.absagen) ? out.absagen : [];
     out.eingeladen = Array.isArray(out.eingeladen) ? out.eingeladen : null;
     out.vertretung = out.vertretung && typeof out.vertretung === "object" && !Array.isArray(out.vertretung)
@@ -720,9 +757,12 @@
      Druckansicht
      ===================================================================== */
 
+  /* Escapt auch Anfuehrungszeichen, damit der Rueckgabewert nicht nur im
+     Textinhalt, sondern auch innerhalb eines Attributwerts sicher ist. */
   function htmlEscape(v) {
     return String(v == null ? "" : v)
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
   function bloeckeZuHtml(bloecke) {
@@ -863,9 +903,11 @@
       }
       return out.join("\r\n");
     }
+    /* Auch Wagenruecklauf maskieren: ein unmaskiertes \r wuerde die Zeile
+       vorzeitig beenden und liesse zusaetzliche Kalendereintraege einschleusen. */
     function esc(v) {
       return String(v).replace(/\\/g, "\\\\").replace(/;/g, "\\;")
-        .replace(/,/g, "\\,").replace(/\n/g, "\\n");
+        .replace(/,/g, "\\,").replace(/\r\n|\r|\n/g, "\\n");
     }
 
     var w = platzhalterWerte(s);
@@ -964,7 +1006,11 @@
   function entschluesseln(paket, passwort) {
     var salt = vonBase64(paket.salt);
     var iv = vonBase64(paket.iv);
-    return schluesselAbleiten(passwort, salt, paket.iterationen || PBKDF2_ITERATIONEN)
+    /* Die Iterationszahl steht in der Datei. Eine manipulierte Angabe wuerde
+       den Browser sonst minutenlang blockieren, darum nach oben begrenzen. */
+    var iterationen = Number(paket.iterationen) || PBKDF2_ITERATIONEN;
+    iterationen = Math.min(Math.max(Math.floor(iterationen), 1), 1000000);
+    return schluesselAbleiten(passwort, salt, iterationen)
       .then(function (schluessel) {
         var chiffre = vonBase64(paket.daten);
         return crypto.subtle.decrypt({ name: "AES-GCM", iv: iv }, schluessel, chiffre);
@@ -1356,9 +1402,14 @@
     store.members.forEach(function (m) {
       if (m.liste && werte.indexOf(m.liste) < 0) werte.push(m.liste);
     });
-    dl.innerHTML = werte.map(function (w) {
-      return '<option value="' + htmlEscape(w) + '"></option>';
-    }).join("");
+    /* Ueber die DOM-Schnittstelle statt per HTML-Text aufbauen: der Wert wird
+       dabei nie als Markup gelesen, egal was in der Liste steht. */
+    dl.innerHTML = "";
+    werte.forEach(function (w) {
+      var o = document.createElement("option");
+      o.value = w;
+      dl.appendChild(o);
+    });
   }
 
   function zeigeVorlagen() {
@@ -1381,7 +1432,7 @@
       bLaden.type = "button"; bLaden.className = "mini secondary"; bLaden.textContent = "Laden";
       bLaden.addEventListener("click", function () {
         if (!confirm("Vorlage „" + v.name + "“ laden?\n\nMitglieder, Verteiler und Standardtexte werden ersetzt. Gespeicherte Sitzungen bleiben erhalten.")) return;
-        store.settings = Object.assign(defaultSettings(), v.settings || {});
+        store.settings = normalizeSettings(v.settings);
         store.members = (v.members || []).map(normalizeMember);
         persist(); alleAnzeigen();
         setStatus("Vorlage „" + v.name + "“ geladen.");
